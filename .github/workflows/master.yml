@@ -1,0 +1,16 @@
+name: build and push
+on: [push]
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master      
+    - name: build + push
+      run: |
+          version=$(date "+%Y-%m-%d")-$(git --no-pager log -1 --pretty=%h)
+          image_prefix=docker.pkg.github.com/nais/up/up
+          docker build -t ${image_prefix}:latest -t ${image_prefix}:${version} .
+          echo ${{ secrets.GITHUB_PASSWORD }} | docker login docker.pkg.github.com --username ${{ secrets.GITHUB_USERNAME }} --password-stdin
+          docker push ${image_prefix}:latest
+          docker push ${image_prefix}:${version}

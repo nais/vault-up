@@ -1,0 +1,11 @@
+{
+  "ingresses": ["https://up.dev-gcp.nais.io"],
+  "resources": {
+    "limits": { "cpu": "100m", "memory": "128Mi" },
+    "requests": { "cpu": "50m", "memory": "64Mi" }
+  },
+  "envs": [
+    { "name": "foo", "value": "bar" },
+    { "name": "asdf", "value": "123" }
+  ]
+}
