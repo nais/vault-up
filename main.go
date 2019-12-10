@@ -29,7 +29,12 @@ func main() {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, syscall.SIGTERM, syscall.SIGINT)
 
-	http.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		counter := r.URL.Query().Get("counter")
+		if counter != "" {
+			fmt.Printf("{\"message\": \"got request with counter: %s\", \"counter\": \"%s\"}\n", counter, counter)
+		}
+
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, defaultResponse)
 	})
