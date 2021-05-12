@@ -11,7 +11,6 @@ RUN go test ./...
 RUN make release
 
 FROM alpine:3
-MAINTAINER Johnny Horvi <johnny.horvi@nav.com>
 WORKDIR /app
 COPY --from=builder /src/up /app/up
 CMD ["/app/up"]
