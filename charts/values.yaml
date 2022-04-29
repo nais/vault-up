@@ -15,8 +15,8 @@ service:
 ingress:
   enabled: false
   className: nais-ingress
-  hosts:
-    - host: chart-example.local
+  hosts: []
+#    - chart-example.local
 
 resources:
   limits:
