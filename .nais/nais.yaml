@@ -8,6 +8,9 @@ metadata:
 spec:
   image: ghcr.io/nais/vault-up:latest
   port: 8080
+  prometheus:
+    enabled: true
+    path: /metrics
   liveness:
     path: /metrics
   readiness:
