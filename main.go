@@ -5,42 +5,51 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"math"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 )
 
 var (
-	bindAddr        string
-	defaultResponse string
+	bindAddr            string
+	expectedSecretValue string
+)
+
+const (
+	metricTemplate = `
+# HELP vault_secret_ok Vault secret is OK 
+# TYPE vault_secret_ok gauge
+vault_secret_ok %s`
+	vaultFilePath = "/var/run/secrets/nais.io/vault-up/secret"
 )
 
 func init() {
 	flag.StringVar(&bindAddr, "bind-address", ":8080", "ip:port where http requests are served")
-	flag.StringVar(&defaultResponse, "default-response", "yes\n", "what to respond when recpinged")
+	flag.StringVar(&expectedSecretValue, "expected-secret-value", "expected", "expected vault secret value")
 	flag.Parse()
 }
 
 func main() {
-	started := time.Now()
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, syscall.SIGTERM, syscall.SIGINT)
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		counter := r.URL.Query().Get("counter")
-		if counter != "" {
-			fmt.Printf("{\"message\": \"got request with counter: %s\", \"counter\": \"%s\"}\n", counter, counter)
-		}
+	secret, err := os.ReadFile(vaultFilePath)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	ok := "0"
+	secretString := string(secret)
+	if secretString == expectedSecretValue {
+		ok = "1"
+	}
+
+	http.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
+		metric := fmt.Sprintf(metricTemplate, ok)
 
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, defaultResponse)
-	})
-	http.HandleFunc("/for", func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, fmt.Sprintf("%.0f seconds\n", math.RoundToEven(time.Now().Sub(started).Seconds())))
+		fmt.Fprint(w, metric)
 	})
 
 	fmt.Println("running @", bindAddr)

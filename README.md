@@ -1,4 +1,4 @@
-# up
+# vault-up
 
 simple util used for measuring uptime
 

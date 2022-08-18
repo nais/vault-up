@@ -1,3 +1,3 @@
-module github.com/nais/up
+module github.com/nais/vault-up
 
-go 1.13
+go 1.19

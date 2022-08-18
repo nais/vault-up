@@ -1,4 +1,4 @@
-FROM golang:1.13-alpine as builder
+FROM golang:1.19-alpine as builder
 RUN apk add --no-cache git make
 ENV GOOS=linux
 ENV CGO_ENABLED=0
@@ -10,7 +10,7 @@ RUN go get
 RUN go test ./...
 RUN make release
 
-FROM alpine:3
+FROM alpine:3.16.2
 WORKDIR /app
-COPY --from=builder /src/up /app/up
-CMD ["/app/up"]
+COPY --from=builder /src/vault-up /app/vault-up
+CMD ["/app/vault-up"]
