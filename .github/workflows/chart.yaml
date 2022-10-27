@@ -1,8 +1,9 @@
 name: Build and push charts
 on:
+  workflow_dispatch:
   push:
     branches:
-      - master
+      - main
     paths:
     - 'charts/**'
     - '.github/workflows/chart.yaml'
