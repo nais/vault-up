@@ -1,0 +1,15 @@
+# Default values for vault.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+tenant: "tenant"
+env: "env"
+enabled: true
+envClass: dev
+alerts:
+  enabled: true
+  webhookUrl: "https://hooks.slack.com/services/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"
+  channel: nais-alerts-ci
+  instance: vault.adeo.no
+vault_up:
+  enabled: false

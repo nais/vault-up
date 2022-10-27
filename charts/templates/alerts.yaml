@@ -1,0 +1,78 @@
+{{ if .Values.alerts.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: vault-alerts
+spec:
+  groups:
+    - name: nais-vault-alerts
+      rules:
+        - alert: VaultDown
+          expr: probe_success{instance="https://{{ .Values.alerts.instance }}/v1/sys/health",job="blackbox-exporter"} == 0
+          for: 5m
+          labels:
+            namespace: nais-system
+            severity: critical
+          annotations:
+            consequence: {{ .Values.alerts.instance }} seems to be unreachable from the in-cluster probe.
+            action: |
+              * Check if the ingress is reachable, and if Vault is up and running.
+              * See https://github.com/navikt/naisvakt/blob/master/vault.md#down for possible solutions.
+        - alert: VaultServerDown
+          expr:  vault_up{job="vault", vault_cluster="{{ .Values.envClass }}"} == 0
+          for: 1m
+          labels:
+            namespace: nais-system
+            severity: critical
+          annotations:
+            consequence: {{ "'Vault on {{ $labels.instance }} is down'" }}
+            action: See https://github.com/navikt/naisvakt/blob/master/vault.md#down for possible solutions.
+        - alert: VaultServerSealed
+          expr: vault_sealed{job="vault", vault_cluster="{{ .Values.envClass }}"} == 1
+          for: 1m
+          labels:
+            namespace: nais-system
+            severity: critical
+          annotations:
+            consequence: {{ "'Vault on {{ $labels.instance }} is sealed'" }}
+            action: See https://github.com/navikt/naisvakt/blob/master/vault.md#unsealing for unsealing.
+
+{{ end }}
+{{ if .Values.vault_up.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: vault-up-alerts
+spec:
+  groups:
+    - name: nais-vault-alerts
+      rules:
+        - alert: vault-up-replicas
+          expr: kube_deployment_status_replicas_available{deployment="vault-up"} < 2
+          for: 3m
+          labels:
+            namespace: nais-system
+            severity: critical
+          annotations:
+            consequence: "Unavailable replicas for `vault-up`"
+            action: "Check pods and vault".
+        - alert: vault-up-secret
+          expr:  vault_secret_ok == 0
+          for: 3m
+          labels:
+            namespace: nais-system
+            severity: critical
+          annotations:
+            consequence: {{ "Error in vault secret for `{{ $labels.kubernetes_pod_name }}`" }}
+            action: "Check pod and vault"
+        - alert: vault-up-metrics
+          expr: absent(vault_secret_ok) == 1
+          for: 3m
+          labels:
+            namespace: nais-system
+            severity: critical
+          annotations:
+            consequence: "Metrics from `vault-up` missing"
+            action: "Check pods"
+
+{{ end }}
