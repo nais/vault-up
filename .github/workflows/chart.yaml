@@ -1,6 +1,5 @@
 name: Build and push charts
 on:
-  workflow_dispatch:
   push:
     branches:
       - main
