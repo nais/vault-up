@@ -13,3 +13,7 @@ alerts:
   instance: vault.adeo.no
 vault_up:
   enabled: false
+  image:
+    repository: europe-north1-docker.pkg.dev/nais-io/nais/images
+    name: vault-up
+    tag: sha-3ada83a

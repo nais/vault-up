@@ -7,7 +7,8 @@ metadata:
   labels:
     team: aura
 spec:
-  image: "ghcr.io/nais/vault-up:2022-08-18-d81d20e"
+  image: "{{ .Values.vault_up.image.repository }}/{{ .Values.vault_up.image.name }}:{{ .Values.vault_up.image.tag | default .Chart.AppVersion }}"
+
   port: 8080
   prometheus:
     enabled: true
