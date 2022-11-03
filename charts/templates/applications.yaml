@@ -3,9 +3,9 @@ apiVersion: "nais.io/v1alpha1"
 kind: "Application"
 metadata:
   name: vault-up
-  namespace: aura
   labels:
-    team: aura
+    {{- include "vault-up.labels" . | nindent 4 }}
+    team: nais
 spec:
   image: "{{ .Values.vault_up.image.repository }}/{{ .Values.vault_up.image.name }}:{{ .Values.vault_up.image.tag | default .Chart.AppVersion }}"
 
