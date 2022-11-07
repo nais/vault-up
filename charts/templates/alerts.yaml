@@ -55,7 +55,7 @@ spec:
             severity: critical
           annotations:
             consequence: "Unavailable replicas for `vault-up`"
-            action: "Check pods and vault".
+            action: "Check pods and vault"
         - alert: vault-up-secret
           expr:  vault_secret_ok == 0
           for: 3m
