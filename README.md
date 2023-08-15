@@ -1,11 +1,15 @@
 # vault-up
 
-simple util used for measuring uptime
+simple app used for measuring vault uptime
 
 * `/` (returns "yes\n" and HTTP 200)
 * `/for` (returns current uptime of process in seconds)
 
-## options
+
+## Requirements
+Requires vault secret in namespace to communicate with vault using token review permission.
+
+## Options
 ```
 Usage:
       --bind-address string          ip:port where http requests are served (default ":8080")
