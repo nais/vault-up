@@ -1,6 +1,5 @@
 tenant: "tenant"
 env: "env"
-enabled: true
 envClass: dev
 alerts:
   enabled: true
