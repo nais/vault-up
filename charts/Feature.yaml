@@ -1,0 +1,34 @@
+dependencies:
+  - allOf:
+      - monitoring
+environmentKinds:
+  - onprem
+values:
+  alerts.channel:
+    displayName: Alerts channel
+    config:
+      type: string
+  alerts.enabled:
+    displayName: Enable vault alerts
+    config:
+      type: bool
+  alerts.webhookUrl:
+    displayName: Alerts webhook URL
+    config:
+      type: string
+  env:
+    displayName: Environment name
+    computed:
+      template: '"{{.Env.name}}"'
+  tenant:
+    displayName: Tenant name
+    computed:
+      template: '"{{.Tenant.Name}}"'
+  vault_up.enabled:
+    displayName: Enable vault_up
+    config:
+      type: bool
+  vault_up.image.tag:
+    displayName: Image tag
+    config:
+      type: string
