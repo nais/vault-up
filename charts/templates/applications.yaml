@@ -2,7 +2,7 @@
 apiVersion: "nais.io/v1alpha1"
 kind: "Application"
 metadata:
-  name: vault-up
+  name: {{ .Release.Name }}
   labels:
     {{- include "vault.labels" . | nindent 4 }}
     team: nais

@@ -3,9 +3,9 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: vault
+  name: {{ .Release.Name }}
   labels:
-    app: vault
+    app: {{ .Release.Name }}
 automountServiceAccountToken: false
 
 ---
@@ -14,13 +14,13 @@ kind: ClusterRoleBinding
 metadata:
   name: role-vault-tokenreview-binding
   labels:
-    app: vault
+    app: {{ .Release.Name }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: system:auth-delegator
 subjects:
   - kind: ServiceAccount
-    name: vault
-    namespace: "{{ .Release.Namespace }}"
+    name: {{ .Release.Name }}
+    namespace: {{ .Release.Namespace }}
 {{ end }}
