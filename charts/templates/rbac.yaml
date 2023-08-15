@@ -7,7 +7,6 @@ metadata:
   labels:
     app: {{ .Release.Name }}
 automountServiceAccountToken: false
-
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
