@@ -18,7 +18,7 @@ for alerts in true false; do
 done
 
 helm template vault-up charts/vault-up --namespace nais-system \
-  --set vault_up.enabled=true > "$temp_dir/rendered.yaml"
+  --set vault_up.enabled=true,env=dev-fss > "$temp_dir/rendered.yaml"
 yq ea --exit-status 'select(.kind == "Naisjob") |
   .apiVersion == "nais.io/v1" and .spec.schedule == "* * * * *" and
   .spec.activeDeadlineSeconds == 120 and .spec.backoffLimit == 0 and

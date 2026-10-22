@@ -6,9 +6,9 @@ tests:
   - name: successful runs keep the canary healthy
     interval: 1m
     input_series:
-      - series: 'kube_cronjob_created{namespace="nais-system",cronjob="vault-up"}'
+      - series: 'kube_cronjob_created{k8s_cluster_name="dev-fss",namespace="nais-system",cronjob="vault-up"}'
         values: '0+0x10'
-      - series: 'kube_cronjob_status_last_successful_time{namespace="nais-system",cronjob="vault-up"}'
+      - series: 'kube_cronjob_status_last_successful_time{k8s_cluster_name="dev-fss",namespace="nais-system",cronjob="vault-up"}'
         values: '0+60x10'
     alert_rule_test:
       - eval_time: 10m
@@ -21,7 +21,7 @@ tests:
   - name: never-successful jobs get a startup window then alert
     interval: 1m
     input_series:
-      - series: 'kube_cronjob_created{namespace="nais-system",cronjob="vault-up"}'
+      - series: 'kube_cronjob_created{k8s_cluster_name="dev-fss",namespace="nais-system",cronjob="vault-up"}'
         values: '0+0x10'
     alert_rule_test:
       - eval_time: 5m
@@ -31,6 +31,7 @@ tests:
         alertname: vault-up-no-recent-success
         exp_alerts:
           - exp_labels: &canary_labels
+              k8s_cluster_name: dev-fss
               namespace: nais-system
               cronjob: vault-up
               severity: critical
@@ -41,9 +42,9 @@ tests:
   - name: failing or stuck runs stop advancing the last success
     interval: 1m
     input_series:
-      - series: 'kube_cronjob_created{namespace="nais-system",cronjob="vault-up"}'
+      - series: 'kube_cronjob_created{k8s_cluster_name="dev-fss",namespace="nais-system",cronjob="vault-up"}'
         values: '0+0x10'
-      - series: 'kube_cronjob_status_last_successful_time{namespace="nais-system",cronjob="vault-up"}'
+      - series: 'kube_cronjob_status_last_successful_time{k8s_cluster_name="dev-fss",namespace="nais-system",cronjob="vault-up"}'
         values: '60+0x10'
     alert_rule_test:
       - eval_time: 6m
@@ -58,15 +59,15 @@ tests:
   - name: recovery clears the alert despite retained failed jobs and duplicate scrapes
     interval: 1m
     input_series:
-      - series: 'kube_cronjob_created{namespace="nais-system",cronjob="vault-up",instance="a"}'
+      - series: 'kube_cronjob_created{k8s_cluster_name="dev-fss",namespace="nais-system",cronjob="vault-up",instance="a"}'
         values: '0+0x10'
-      - series: 'kube_cronjob_created{namespace="nais-system",cronjob="vault-up",instance="b"}'
+      - series: 'kube_cronjob_created{k8s_cluster_name="dev-fss",namespace="nais-system",cronjob="vault-up",instance="b"}'
         values: '0+0x10'
-      - series: 'kube_cronjob_status_last_successful_time{namespace="nais-system",cronjob="vault-up",instance="a"}'
+      - series: 'kube_cronjob_status_last_successful_time{k8s_cluster_name="dev-fss",namespace="nais-system",cronjob="vault-up",instance="a"}'
         values: '60+0x8 540 600'
-      - series: 'kube_cronjob_status_last_successful_time{namespace="nais-system",cronjob="vault-up",instance="b"}'
+      - series: 'kube_cronjob_status_last_successful_time{k8s_cluster_name="dev-fss",namespace="nais-system",cronjob="vault-up",instance="b"}'
         values: '60+0x8 540 600'
-      - series: 'kube_job_status_failed{namespace="nais-system",job_name="vault-up-old"}'
+      - series: 'kube_job_status_failed{k8s_cluster_name="dev-fss",namespace="nais-system",job_name="vault-up-old"}'
         values: '1+0x10'
     alert_rule_test:
       - eval_time: 8m
@@ -94,9 +95,9 @@ tests:
   - name: another namespace cannot hide a failed canary
     interval: 1m
     input_series:
-      - series: 'kube_cronjob_created{namespace="nais-system",cronjob="vault-up"}'
+      - series: 'kube_cronjob_created{k8s_cluster_name="dev-fss",namespace="nais-system",cronjob="vault-up"}'
         values: '0+0x10'
-      - series: 'kube_cronjob_status_last_successful_time{namespace="another-team",cronjob="vault-up"}'
+      - series: 'kube_cronjob_status_last_successful_time{k8s_cluster_name="dev-fss",namespace="another-team",cronjob="vault-up"}'
         values: '0+60x10'
     alert_rule_test:
       - eval_time: 7m
@@ -104,3 +105,37 @@ tests:
         exp_alerts:
           - exp_labels: *canary_labels
             exp_annotations: *no_success_annotations
+
+  - name: a healthy cluster cannot hide a failing cluster
+    interval: 1m
+    input_series:
+      - series: 'kube_cronjob_created{namespace="nais-system",cronjob="vault-up",k8s_cluster_name="dev-fss"}'
+        values: '0+0x10'
+      - series: 'kube_cronjob_created{namespace="nais-system",cronjob="vault-up",k8s_cluster_name="prod-fss"}'
+        values: '0+0x10'
+      - series: 'kube_cronjob_status_last_successful_time{namespace="nais-system",cronjob="vault-up",k8s_cluster_name="dev-fss"}'
+        values: '60+0x10'
+      - series: 'kube_cronjob_status_last_successful_time{namespace="nais-system",cronjob="vault-up",k8s_cluster_name="prod-fss"}'
+        values: '0+60x10'
+    alert_rule_test:
+      - eval_time: 8m
+        alertname: vault-up-no-recent-success
+        exp_alerts:
+          - exp_labels: *canary_labels
+            exp_annotations: *no_success_annotations
+
+  - name: a canary in another cluster cannot hide a missing canary
+    interval: 1m
+    input_series:
+      - series: 'kube_cronjob_created{namespace="nais-system",cronjob="vault-up",k8s_cluster_name="prod-fss"}'
+        values: '0+0x10'
+      - series: 'kube_cronjob_status_last_successful_time{namespace="nais-system",cronjob="vault-up",k8s_cluster_name="prod-fss"}'
+        values: '0+60x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: vault-up-missing
+        exp_alerts:
+          - exp_labels: *canary_labels
+            exp_annotations:
+              consequence: The Vault canary CronJob is missing from kube-state-metrics.
+              action: Check the Naisjob, Naiserator reconciliation and kube-state-metrics.

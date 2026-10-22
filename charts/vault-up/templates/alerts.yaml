@@ -51,12 +51,12 @@ spec:
         - alert: vault-up-no-recent-success
           expr: |
             time() - (
-              max by (cluster, namespace, cronjob) (
-                kube_cronjob_status_last_successful_time{namespace="{{ .Release.Namespace }}",cronjob="{{ .Release.Name }}"}
+              max by (k8s_cluster_name, namespace, cronjob) (
+                kube_cronjob_status_last_successful_time{k8s_cluster_name="{{ .Values.env }}",namespace="{{ .Release.Namespace }}",cronjob="{{ .Release.Name }}"}
               )
               or
-              max by (cluster, namespace, cronjob) (
-                kube_cronjob_created{namespace="{{ .Release.Namespace }}",cronjob="{{ .Release.Name }}"}
+              max by (k8s_cluster_name, namespace, cronjob) (
+                kube_cronjob_created{k8s_cluster_name="{{ .Values.env }}",namespace="{{ .Release.Namespace }}",cronjob="{{ .Release.Name }}"}
               )
             ) > 300
           for: 1m
@@ -67,7 +67,7 @@ spec:
             consequence: "The Vault canary has not completed successfully for over five minutes."
             action: "Check canary Job events, Vault init-container logs and secret-validation logs."
         - alert: vault-up-missing
-          expr: absent(kube_cronjob_created{namespace="{{ .Release.Namespace }}",cronjob="{{ .Release.Name }}"})
+          expr: absent(kube_cronjob_created{k8s_cluster_name="{{ .Values.env }}",namespace="{{ .Release.Namespace }}",cronjob="{{ .Release.Name }}"})
           for: 5m
           labels:
             namespace: {{ .Release.Namespace }}
