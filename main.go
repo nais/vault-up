@@ -1,65 +1,32 @@
 package main
 
 import (
-	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
 )
-
-var (
-	bindAddr            string
-	expectedSecretValue string
-)
-
-const (
-	metricTemplate = `
-# HELP vault_secret_ok Vault secret is OK 
-# TYPE vault_secret_ok gauge
-vault_secret_ok %s`
-	vaultFilePath = "/var/run/secrets/nais.io/vault-up/secret"
-)
-
-func init() {
-	flag.StringVar(&bindAddr, "bind-address", ":8080", "ip:port where http requests are served")
-	flag.StringVar(&expectedSecretValue, "expected-secret-value", "expected", "expected vault secret value")
-	flag.Parse()
-}
 
 func main() {
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, syscall.SIGTERM, syscall.SIGINT)
+	secretFile := flag.String("secret-file", "/var/run/secrets/nais.io/vault-up/secret", "path to the injected Vault secret")
+	expected := flag.String("expected-secret-value", "expected", "expected Vault secret value")
+	flag.Parse()
 
-	secret, err := os.ReadFile(vaultFilePath)
+	if err := checkSecret(*secretFile, *expected); err != nil {
+		log.Print(err)
+		os.Exit(1)
+	}
+	log.Print("Vault secret verified")
+}
+
+func checkSecret(path, expected string) error {
+	secret, err := os.ReadFile(path)
 	if err != nil {
-		fmt.Println(err)
+		return fmt.Errorf("read Vault secret: %w", err)
 	}
-
-	ok := "0"
-	secretString := string(secret)
-	if secretString == expectedSecretValue {
-		ok = "1"
+	if string(secret) != expected {
+		return errors.New("Vault secret does not match the expected value")
 	}
-
-	http.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
-		metric := fmt.Sprintf(metricTemplate, ok)
-
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, metric)
-	})
-
-	fmt.Println("running @", bindAddr)
-	go func() {
-		log.Fatal((&http.Server{Addr: bindAddr}).ListenAndServe())
-	}()
-
-	<-interrupt
-
-	fmt.Println("shutting down")
-
-	(&http.Server{Addr: bindAddr}).Shutdown(context.Background())
+	return nil
 }

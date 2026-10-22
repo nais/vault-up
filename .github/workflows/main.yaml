@@ -1,60 +1,28 @@
 name: Build and deploy
+
 on:
   push:
-    branches:
-      - main
-env:
-  NAME: vault-up
-  FEATURE_REPOSITORY: oci://europe-north1-docker.pkg.dev/nais-io/nais/feature
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+  id-token: write
 
 jobs:
-  build_and_push:
-    outputs:
-      version: ${{ steps.build-push-sign.outputs.version }}
-    permissions:
-      contents: "read"
-      id-token: "write"
-    name: build and push
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - uses: nais/platform-build-push-sign@main
-        id: build-push-sign
-        with:
-          name: ${{ env.NAME }}
-          google_service_account: gh-${{ env.NAME }}
-          workload_identity_provider: ${{ secrets.NAIS_IO_WORKLOAD_IDENTITY_PROVIDER }}
-          push: true
-
-      - uses: azure/setup-helm@v3
-        name: "Setup Helm"
-        with:
-          version: "v3.12.0"
-
-      - name: Build Chart
-        run: |-
-          sed -i "s/^version: .*/version: ${{ steps.build-push-sign.outputs.version }}/g" charts/Chart.yaml
-          helm package charts
-
-      - name: Push Chart
-        run: |-
-          helm push ${{ env.NAME }}*.tgz ${{ env.FEATURE_REPOSITORY }}
-
-  deploy:
-    name: Deploy
-    needs:
-      - build_and_push
-    runs-on: fasit-deploy
-    permissions:
-      id-token: write
-    steps:
-      - uses: nais/fasit-deploy@58a70a338b16dc646373c91724fc7e7522d085a4 # ratchet:nais/fasit-deploy@v4.0.1
-        with:
-          chart: ${{ env.FEATURE_REPOSITORY }}/${{ env.NAME }}
-          version: ${{ needs.build_and_push.outputs.version }}
-          targets: |
-            [
-              { "target": { "kind": "onprem", "tenant": "ci-nais" }, "wait": true },
-              { "target": { "kind": "onprem" } }
-            ]
+  build:
+    uses: nais/actions/.github/workflows/mise-build-deploy-fasit.yaml@d552cb1cb4084c5804d7d47a075c645c674c351e # ratchet:nais/actions/.github/workflows/mise-build-deploy-fasit.yaml@main
+    with:
+      mise-tasks: '["check", "test"]'
+      builds-docker: ${{ github.event_name == 'push' }}
+      builds-chart: ${{ github.event_name == 'push' }}
+      deploys-to-fasit: true
+      chart-repo: nais-io/nais/feature
+      helm-version: v4.3.1
+      targets: |
+        [
+          { "target": { "kind": "onprem", "tenant": "ci-nais" }, "wait": true },
+          { "target": { "kind": "onprem" } }
+        ]
+    secrets:
+      NAIS_IO_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.NAIS_IO_WORKLOAD_IDENTITY_PROVIDER }}

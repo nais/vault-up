@@ -1,0 +1,106 @@
+rule_files:
+  - rules.yaml
+evaluation_interval: 1m
+
+tests:
+  - name: successful runs keep the canary healthy
+    interval: 1m
+    input_series:
+      - series: 'kube_cronjob_created{namespace="nais-system",cronjob="vault-up"}'
+        values: '0+0x10'
+      - series: 'kube_cronjob_status_last_successful_time{namespace="nais-system",cronjob="vault-up"}'
+        values: '0+60x10'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: vault-up-no-recent-success
+        exp_alerts: []
+      - eval_time: 10m
+        alertname: vault-up-missing
+        exp_alerts: []
+
+  - name: never-successful jobs get a startup window then alert
+    interval: 1m
+    input_series:
+      - series: 'kube_cronjob_created{namespace="nais-system",cronjob="vault-up"}'
+        values: '0+0x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: vault-up-no-recent-success
+        exp_alerts: []
+      - eval_time: 7m
+        alertname: vault-up-no-recent-success
+        exp_alerts:
+          - exp_labels: &canary_labels
+              namespace: nais-system
+              cronjob: vault-up
+              severity: critical
+            exp_annotations: &no_success_annotations
+              consequence: The Vault canary has not completed successfully for over five minutes.
+              action: Check canary Job events, Vault init-container logs and secret-validation logs.
+
+  - name: failing or stuck runs stop advancing the last success
+    interval: 1m
+    input_series:
+      - series: 'kube_cronjob_created{namespace="nais-system",cronjob="vault-up"}'
+        values: '0+0x10'
+      - series: 'kube_cronjob_status_last_successful_time{namespace="nais-system",cronjob="vault-up"}'
+        values: '60+0x10'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: vault-up-no-recent-success
+        exp_alerts: []
+      - eval_time: 8m
+        alertname: vault-up-no-recent-success
+        exp_alerts:
+          - exp_labels: *canary_labels
+            exp_annotations: *no_success_annotations
+
+  - name: recovery clears the alert despite retained failed jobs and duplicate scrapes
+    interval: 1m
+    input_series:
+      - series: 'kube_cronjob_created{namespace="nais-system",cronjob="vault-up",instance="a"}'
+        values: '0+0x10'
+      - series: 'kube_cronjob_created{namespace="nais-system",cronjob="vault-up",instance="b"}'
+        values: '0+0x10'
+      - series: 'kube_cronjob_status_last_successful_time{namespace="nais-system",cronjob="vault-up",instance="a"}'
+        values: '60+0x8 540 600'
+      - series: 'kube_cronjob_status_last_successful_time{namespace="nais-system",cronjob="vault-up",instance="b"}'
+        values: '60+0x8 540 600'
+      - series: 'kube_job_status_failed{namespace="nais-system",job_name="vault-up-old"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 8m
+        alertname: vault-up-no-recent-success
+        exp_alerts:
+          - exp_labels: *canary_labels
+            exp_annotations: *no_success_annotations
+      - eval_time: 9m
+        alertname: vault-up-no-recent-success
+        exp_alerts: []
+
+  - name: missing cronjob alerts after five minutes
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: vault-up-missing
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: vault-up-missing
+        exp_alerts:
+          - exp_labels: *canary_labels
+            exp_annotations:
+              consequence: The Vault canary CronJob is missing from kube-state-metrics.
+              action: Check the Naisjob, Naiserator reconciliation and kube-state-metrics.
+
+  - name: another namespace cannot hide a failed canary
+    interval: 1m
+    input_series:
+      - series: 'kube_cronjob_created{namespace="nais-system",cronjob="vault-up"}'
+        values: '0+0x10'
+      - series: 'kube_cronjob_status_last_successful_time{namespace="another-team",cronjob="vault-up"}'
+        values: '0+60x10'
+    alert_rule_test:
+      - eval_time: 7m
+        alertname: vault-up-no-recent-success
+        exp_alerts:
+          - exp_labels: *canary_labels
+            exp_annotations: *no_success_annotations

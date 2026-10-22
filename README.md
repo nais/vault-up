@@ -1,13 +1,23 @@
 # vault-up
 
-simple app used for measuring vault uptime
+Checks that the Vault init container works in on-premises Nais clusters.
+Every minute, a Naisjob starts a fresh pod and verifies the injected secret.
+It exits successfully if the value is `expected`; otherwise it fails.
 
-* `/` (returns "yes\n" and HTTP 200)
-* `/for` (returns current uptime of process in seconds)
+## Development
 
-## Options
+Install [mise](https://mise.jdx.dev/), then run:
+
+```sh
+mise install
+mise run build
+mise run test
+mise run check
 ```
-Usage:
-      --bind-address string          ip:port where http requests are served (default ":8080")
-      --default-response string      what to respond when receiving requests on '/' (default "yes\n")
-```
+
+## Alerts
+
+- **No recent success:** no successful run for over five minutes, sustained for one minute.
+- **Missing canary:** the CronJob is missing from kube-state-metrics for five minutes.
+
+See [the alert rules](charts/vault-up/templates/alerts.yaml) for details.

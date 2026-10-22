@@ -1,0 +1,8 @@
+apiVersion: v2
+name: vault-up
+sources:
+  - https://github.com/nais/vault-up/tree/main/charts/vault-up/
+description: Vault health alerts and a scheduled secret-injection canary
+type: application
+version: 0.1.0
+appVersion: "main"

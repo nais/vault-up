@@ -39,40 +39,41 @@ spec:
 
 {{ end }}
 {{ if .Values.vault_up.enabled }}
+---
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
   name: vault-up-alerts
 spec:
   groups:
-    - name: nais-vault-alerts
+    - name: nais-vault-canary-alerts
       rules:
-        - alert: vault-up-replicas
-          expr: kube_deployment_status_replicas_available{deployment="vault-up"} < 2
-          for: 3m
+        - alert: vault-up-no-recent-success
+          expr: |
+            time() - (
+              max by (cluster, namespace, cronjob) (
+                kube_cronjob_status_last_successful_time{namespace="{{ .Release.Namespace }}",cronjob="{{ .Release.Name }}"}
+              )
+              or
+              max by (cluster, namespace, cronjob) (
+                kube_cronjob_created{namespace="{{ .Release.Namespace }}",cronjob="{{ .Release.Name }}"}
+              )
+            ) > 300
+          for: 1m
           labels:
-            namespace: nais-system
+            namespace: {{ .Release.Namespace }}
             severity: critical
           annotations:
-            consequence: "Unavailable replicas for `vault-up`"
-            action: "Check pods and vault"
-        - alert: vault-up-secret
-          expr:  vault_secret_ok == 0
-          for: 3m
+            consequence: "The Vault canary has not completed successfully for over five minutes."
+            action: "Check canary Job events, Vault init-container logs and secret-validation logs."
+        - alert: vault-up-missing
+          expr: absent(kube_cronjob_created{namespace="{{ .Release.Namespace }}",cronjob="{{ .Release.Name }}"})
+          for: 5m
           labels:
-            namespace: nais-system
+            namespace: {{ .Release.Namespace }}
             severity: critical
           annotations:
-            consequence: {{ "Error in vault secret for `{{ $labels.kubernetes_pod_name }}`" }}
-            action: "Check pod and vault"
-        - alert: vault-up-metrics
-          expr: absent(vault_secret_ok) == 1
-          for: 3m
-          labels:
-            namespace: nais-system
-            severity: critical
-          annotations:
-            consequence: "Metrics from `vault-up` missing"
-            action: "Check pods"
+            consequence: "The Vault canary CronJob is missing from kube-state-metrics."
+            action: "Check the Naisjob, Naiserator reconciliation and kube-state-metrics."
 
 {{ end }}

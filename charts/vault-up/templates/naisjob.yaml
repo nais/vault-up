@@ -1,6 +1,6 @@
 {{ if .Values.vault_up.enabled }}
-apiVersion: "nais.io/v1alpha1"
-kind: "Application"
+apiVersion: nais.io/v1
+kind: Naisjob
 metadata:
   name: {{ .Release.Name }}
   labels:
@@ -9,17 +9,13 @@ metadata:
 spec:
   image: "{{ .Values.vault_up.image.repository }}/{{ .Values.vault_up.image.name }}:{{ .Values.vault_up.image.tag | default .Chart.AppVersion }}"
 
-  port: 8080
-  prometheus:
-    enabled: true
-    path: /metrics
-  liveness:
-    path: /metrics
-  readiness:
-    path: /metrics
-  replicas:
-    min: 2
-    max: 2
+  schedule: "* * * * *"
+  concurrencyPolicy: Forbid
+  activeDeadlineSeconds: 120
+  backoffLimit: 0
+  restartPolicy: Never
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
   resources:
     limits:
       cpu: "100m"

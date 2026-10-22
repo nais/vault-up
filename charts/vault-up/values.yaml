@@ -10,4 +10,4 @@ vault_up:
   image:
     repository: europe-north1-docker.pkg.dev/nais-io/nais/images
     name: vault-up
-    tag: sha-3ada83a
+    tag: ""

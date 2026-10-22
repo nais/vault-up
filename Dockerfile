@@ -1,16 +1,10 @@
-FROM golang:1.19-alpine as builder
-RUN apk add --no-cache git make
-ENV GOOS=linux
+FROM golang:1.27.3 AS builder
 ENV CGO_ENABLED=0
-ENV GO111MODULE=on
-COPY . /src
 WORKDIR /src
-RUN rm -f go.sum
-RUN go get
-RUN go test ./...
-RUN make release
+COPY go.mod main.go ./
+RUN go build -trimpath -ldflags="-s -w" -o /vault-up .
 
-FROM alpine:3.16.2
+FROM cgr.dev/chainguard/static:latest
 WORKDIR /app
-COPY --from=builder /src/vault-up /app/vault-up
-CMD ["/app/vault-up"]
+COPY --from=builder /vault-up /app/vault-up
+ENTRYPOINT ["/app/vault-up"]
