@@ -66,6 +66,7 @@ spec:
           annotations:
             consequence: "The Vault canary has not completed successfully for over five minutes."
             action: "Check canary Job events, Vault init-container logs and secret-validation logs."
+            dashboard_url: "https://monitoring.nais.io/d/vault-up-canary/vault-canary?var-cluster={{ .Values.env }}"
         - alert: vault-up-missing
           expr: absent(kube_cronjob_created{k8s_cluster_name="{{ .Values.env }}",namespace="{{ .Release.Namespace }}",cronjob="{{ .Release.Name }}"})
           for: 5m
@@ -75,5 +76,6 @@ spec:
           annotations:
             consequence: "The Vault canary CronJob is missing from kube-state-metrics."
             action: "Check the Naisjob, Naiserator reconciliation and kube-state-metrics."
+            dashboard_url: "https://monitoring.nais.io/d/vault-up-canary/vault-canary?var-cluster={{ .Values.env }}"
 
 {{ end }}

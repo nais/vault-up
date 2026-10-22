@@ -21,3 +21,7 @@ mise run check
 - **Missing canary:** the CronJob is missing from kube-state-metrics for five minutes.
 
 See [the alert rules](charts/vault-up/templates/alerts.yaml) for details.
+
+## Dashboard
+
+Import [grafana/vault-up.json](grafana/vault-up.json) in Grafana and select the shared Prometheus datasource.

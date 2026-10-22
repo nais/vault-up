@@ -1,0 +1,82 @@
+rule_files:
+  - dashboard-rules.yaml
+evaluation_interval: 1m
+
+tests:
+  - name: only onprem clusters appear and missing canaries are not successful
+    interval: 1m
+    input_series:
+      - series: 'up{job="kube-state-metrics",k8s_cluster_name="ci-fss"}'
+        values: '1+0x10'
+      - series: 'up{job="kube-state-metrics",k8s_cluster_name="dev-fss"}'
+        values: '1+0x10'
+      - series: 'up{job="kube-state-metrics",k8s_cluster_name="prod-fss"}'
+        values: '1+0x10'
+      - series: 'up{job="kube-state-metrics",k8s_cluster_name="dev"}'
+        values: '1+0x10'
+      - series: 'up{job="kube-state-metrics",k8s_cluster_name="prod"}'
+        values: '1+0x10'
+      - series: 'up{job="kube-state-metrics",k8s_cluster_name="management"}'
+        values: '1+0x10'
+      - series: 'kube_cronjob_created{namespace="nais-system",cronjob="vault-up",k8s_cluster_name="management"}'
+        values: '1+0x10'
+      - series: 'kube_cronjob_status_last_successful_time{namespace="nais-system",cronjob="vault-up",k8s_cluster_name="management"}'
+        values: '60+0x10'
+      - series: 'ALERTS{namespace="nais-system",k8s_cluster_name="management",alertname="vault-up-missing",alertstate="firing"}'
+        values: '1+0x10'
+      - series: 'kube_cronjob_created{namespace="nais-system",cronjob="vault-up",k8s_cluster_name="dev-fss",instance="a"}'
+        values: '1+0x10'
+      - series: 'kube_cronjob_created{namespace="nais-system",cronjob="vault-up",k8s_cluster_name="dev-fss",instance="b"}'
+        values: '1+0x10'
+      - series: 'kube_cronjob_created{namespace="nais-system",cronjob="another-job",k8s_cluster_name="prod-fss"}'
+        values: '1+0x10'
+      - series: 'kube_cronjob_status_last_successful_time{namespace="nais-system",cronjob="vault-up",k8s_cluster_name="dev-fss"}'
+        values: '0+60x9 570'
+    promql_expr_test:
+      - expr: vault_up_dashboard_panel_1_A
+        eval_time: 10m
+        exp_samples:
+          - labels: 'vault_up_dashboard_panel_1_A{k8s_cluster_name="dev-fss"}'
+            value: 1
+          - labels: 'vault_up_dashboard_panel_1_A{k8s_cluster_name="prod-fss"}'
+            value: 0
+      - expr: vault_up_dashboard_panel_2_A
+        eval_time: 10m
+        exp_samples:
+          - labels: 'vault_up_dashboard_panel_2_A{k8s_cluster_name="dev-fss"}'
+            value: 30
+          - labels: 'vault_up_dashboard_panel_2_A{k8s_cluster_name="prod-fss"}'
+            value: -1
+      - expr: vault_up_dashboard_panel_3_A
+        eval_time: 10m
+        exp_samples:
+          - labels: 'vault_up_dashboard_panel_3_A{k8s_cluster_name="dev-fss"}'
+            value: 30
+      - expr: vault_up_dashboard_panel_4_A
+        eval_time: 10m
+        exp_samples: []
+
+  - name: healthy cluster cannot hide a stale cluster or its alerts
+    interval: 1m
+    input_series:
+      - series: 'kube_cronjob_status_last_successful_time{namespace="nais-system",cronjob="vault-up",k8s_cluster_name="dev-fss"}'
+        values: '0+60x10'
+      - series: 'kube_cronjob_status_last_successful_time{namespace="nais-system",cronjob="vault-up",k8s_cluster_name="prod-fss"}'
+        values: '60+0x10'
+      - series: 'ALERTS{namespace="nais-system",k8s_cluster_name="prod-fss",alertname="vault-up-no-recent-success",alertstate="firing"}'
+        values: '1+0x10'
+      - series: 'ALERTS{namespace="nais-system",k8s_cluster_name="prod-fss",alertname="VaultServerDown",alertstate="firing"}'
+        values: '1+0x10'
+    promql_expr_test:
+      - expr: vault_up_dashboard_panel_2_A
+        eval_time: 10m
+        exp_samples:
+          - labels: 'vault_up_dashboard_panel_2_A{k8s_cluster_name="dev-fss"}'
+            value: 0
+          - labels: 'vault_up_dashboard_panel_2_A{k8s_cluster_name="prod-fss"}'
+            value: 540
+      - expr: vault_up_dashboard_panel_4_A
+        eval_time: 10m
+        exp_samples:
+          - labels: 'vault_up_dashboard_panel_4_A{k8s_cluster_name="prod-fss",alertname="vault-up-no-recent-success",alertstate="firing"}'
+            value: 1

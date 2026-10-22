@@ -24,7 +24,7 @@ run = "go test -race -cover ./..."
 
 [tasks.check]
 description = "Run static checks"
-depends = ["check:govet", "check:govulncheck", "check:actions", "check:helm"]
+depends = ["check:govet", "check:govulncheck", "check:actions", "check:helm", "check:dashboard"]
 
 [tasks."check:govet"]
 run = "go vet ./..."
@@ -37,6 +37,9 @@ run = ["ratchet lint .github/workflows/*.yaml", "actionlint"]
 
 [tasks."check:helm"]
 run = "bash tests/check-chart.sh"
+
+[tasks."check:dashboard"]
+run = "bash tests/check-dashboard.sh"
 
 [tasks."actions:upgrade"]
 description = "Upgrade and pin GitHub Actions"

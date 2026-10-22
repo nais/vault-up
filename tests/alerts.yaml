@@ -38,6 +38,7 @@ tests:
             exp_annotations: &no_success_annotations
               consequence: The Vault canary has not completed successfully for over five minutes.
               action: Check canary Job events, Vault init-container logs and secret-validation logs.
+              dashboard_url: https://monitoring.nais.io/d/vault-up-canary/vault-canary?var-cluster=dev-fss
 
   - name: failing or stuck runs stop advancing the last success
     interval: 1m
@@ -91,6 +92,7 @@ tests:
             exp_annotations:
               consequence: The Vault canary CronJob is missing from kube-state-metrics.
               action: Check the Naisjob, Naiserator reconciliation and kube-state-metrics.
+              dashboard_url: https://monitoring.nais.io/d/vault-up-canary/vault-canary?var-cluster=dev-fss
 
   - name: another namespace cannot hide a failed canary
     interval: 1m
@@ -139,3 +141,4 @@ tests:
             exp_annotations:
               consequence: The Vault canary CronJob is missing from kube-state-metrics.
               action: Check the Naisjob, Naiserator reconciliation and kube-state-metrics.
+              dashboard_url: https://monitoring.nais.io/d/vault-up-canary/vault-canary?var-cluster=dev-fss
