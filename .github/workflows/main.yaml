@@ -5,12 +5,13 @@ on:
     branches: [main]
   pull_request:
 
-permissions:
-  contents: read
-  id-token: write
+permissions: {}
 
 jobs:
   build:
+    permissions:
+      contents: write
+      id-token: write
     uses: nais/actions/.github/workflows/mise-build-deploy-fasit.yaml@d552cb1cb4084c5804d7d47a075c645c674c351e # ratchet:nais/actions/.github/workflows/mise-build-deploy-fasit.yaml@main
     with:
       mise-tasks: '["check", "test"]'
