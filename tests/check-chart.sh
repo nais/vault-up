@@ -22,6 +22,7 @@ helm template vault-up charts/vault-up --namespace nais-system \
 yq ea --exit-status 'select(.kind == "Naisjob") |
   .apiVersion == "nais.io/v1" and .spec.schedule == "* * * * *" and
   .spec.activeDeadlineSeconds == 120 and .spec.backoffLimit == 0 and
+  .spec.ttlSecondsAfterFinished == 300 and
   .spec.restartPolicy == "Never" and .spec.concurrencyPolicy == "Forbid" and
   .spec.vault.enabled == true and .spec.prometheus == null and
   .spec.replicas == null' "$temp_dir/rendered.yaml" > /dev/null

@@ -12,6 +12,7 @@ spec:
   schedule: "* * * * *"
   concurrencyPolicy: Forbid
   activeDeadlineSeconds: 120
+  ttlSecondsAfterFinished: 300
   backoffLimit: 0
   restartPolicy: Never
   successfulJobsHistoryLimit: 3
